@@ -1,25 +1,38 @@
 # Contribution Platform
 
-A Flask-based web application for crowdfunding contributions to community events like burials, weddings, medical emergencies, and more. Integrated with M-Pesa STK Push for easy payment collection.
+A Flask-based web application for crowdfunding contributions to community events like burials, weddings, medical emergencies, and more. Features secure admin authentication with multi-tenant data isolation, allowing each admin to independently manage their own fundraising campaigns. Integrated with M-Pesa STK Push for easy payment collection.
+
+## Quick Start
+
+1. **Create Admin Account**: Visit `/signup` to create a new admin account
+2. **Login**: Use your credentials at `/login`
+3. **Create Events**: Add new fundraising events from your admin dashboard
+4. **Accept Contributions**: Receive contributions via M-Pesa STK Push
+5. **Track Funds**: Monitor expenditures and fund usage by category
 
 ## Features
 
 - **Event Management**: Create and manage fundraising events
 - **Contribution Tracking**: Track all contributions in real-time
 - **M-Pesa Integration**: STK Push payment integration for Kenyan market
+- **Admin Authentication**: Secure signup/login system for admin accounts
+- **Multi-Tenant Support**: Each admin account has isolated access to their own events and data
 - **Admin Dashboard**: Complete admin interface for event and contribution management
-- **Expenditure Tracking**: Monitor how funds are being spent
+- **Expenditure Tracking**: Monitor how funds are being spent with categorization
 - **Progress Tracking**: Visual progress bars showing collection status
+- **Dark Mode**: Optional dark theme with localStorage persistence
 - **PostgreSQL/SQLite Database**: Robust data storage and retrieval
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## Tech Stack
 
 - **Backend**: Flask, Flask-SQLAlchemy, Flask-Migrate
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (production) / SQLite (development)
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Authentication**: Werkzeug password hashing
 - **Payments**: M-Pesa STK Push API
 - **Server**: Gunicorn
+- **Theme**: Forest green (#2d5016) with dark mode support
 
 ## Installation
 
@@ -95,12 +108,28 @@ A Flask-based web application for crowdfunding contributions to community events
 
 ### For Administrators
 
-1. Navigate to `/admin` to access the admin dashboard
-2. Click "New Event" to create a fundraising event
+#### First Time Setup
+1. Visit `http://localhost:5000`
+2. Click "Admin Login" button
+3. Click "Create one here" to create a new admin account
+4. Fill in username (min 3 chars), email, and password (min 6 chars)
+5. Account is created and you're automatically logged in
+
+#### Managing Events
+1. Access your admin dashboard at `/admin`
+2. Click "+ New Event" to create a fundraising event
 3. Fill in event details (title, description, target amount, type)
-4. View all events and their progress
+4. View all **your events** and their progress (multi-tenant: only your data)
 5. Edit events to change status or details
-6. View detailed contribution reports
+6. Add expenditures to track fund usage by category
+7. View detailed contribution reports for each event
+8. Click "Logout" to end your session
+
+#### Data Security
+- Each admin account only sees and manages their own events
+- Other admins' events remain completely hidden
+- Contributions and expenditures are tied to specific events
+- Admin sessions are secure and require login
 
 ## API Endpoints
 
@@ -114,17 +143,25 @@ A Flask-based web application for crowdfunding contributions to community events
 - `POST /api/contribution` - Submit a new contribution
 - `POST /api/payment/callback` - M-Pesa payment callback (webhook)
 
-### Admin Routes
+### Authentication Routes
 
-- `GET /admin` - Admin dashboard
+- `GET /signup` - Create new admin account
+- `POST /signup` - Submit signup form
+- `GET /login` - Admin login page
+- `POST /login` - Submit login credentials
+- `GET /logout` - Logout and clear session
+
+### Admin Routes (Require Login)
+
+- `GET /admin` - Admin dashboard (only your events)
 - `GET /admin/create-event` - Create event form
-- `POST /admin/create-event` - Create new event
-- `GET /admin/event/<id>/edit` - Edit event form
-- `POST /admin/event/<id>/edit` - Update event
-- `GET /admin/event/<id>` - Event details (admin view)
+- `POST /admin/create-event` - Create new event (linked to your account)
+- `GET /admin/event/<id>/edit` - Edit event form (only if you own it)
+- `POST /admin/event/<id>/edit` - Update event (only if you own it)
+- `GET /admin/event/<id>` - Event details (admin view, only if you own it)
 - `GET /admin/event/<id>/expenditure/add` - Add expenditure form
 - `POST /admin/event/<id>/expenditure/add` - Create new expenditure
-- `POST /admin/expenditure/<id>/delete` - Delete expenditure record
+- `POST /admin/expenditure/<id>/delete` - Delete expenditure record (only if you own the event)
 
 ## Event Types
 
@@ -160,12 +197,21 @@ The platform supports the following event types:
 
 ## Database Models
 
+### User
+- username (unique, min 3 chars)
+- email (unique)
+- password_hash (encrypted with werkzeug)
+- created_at
+- Relationship: One-to-Many with Event
+
 ### Event
+- admin_id (foreign key to User - multi-tenant)
 - title, description, event_type
 - organizer_name, organizer_phone
 - target_amount, current_amount
 - event_date, created_at, updated_at
 - status (active/closed/completed)
+- Relationships: One-to-Many with Contribution, One-to-Many with Expenditure
 
 ### Contribution
 - event_id, contributor_name, contributor_phone
@@ -210,19 +256,45 @@ CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "run:app"]
 
 ## Security Considerations
 
-- Always use HTTPS in production
-- Keep M-Pesa credentials secure (use environment variables)
-- Validate all user input
-- Use strong SECRET_KEY
-- Enable CORS only for trusted domains
-- Regular security audits recommended
+- **Authentication**: Admin accounts use Werkzeug secure password hashing
+- **Multi-Tenant Isolation**: Each admin only sees their own events via admin_id foreign key
+- **Session Management**: Session-based authentication with SECRET_KEY
+- **Access Control**: All admin routes require login_required decorator
+- **HTTPS**: Always use HTTPS in production
+- **M-Pesa Credentials**: Keep credentials secure (use environment variables)
+- **Input Validation**: All user input validated on backend
+- **Strong SECRET_KEY**: Use strong SECRET_KEY in .env
+- **Regular Audits**: Regular security audits recommended
+- **Database**: Use PostgreSQL with proper user permissions in production
 
 ## Troubleshooting
 
 ### Database Connection Error
 ```
 Check DATABASE_URL in .env file
-Ensure PostgreSQL service is running
+Ensure PostgreSQL service is running (or use SQLite for dev)
+If migration errors occur, try: rm app.db && python run.py (SQLite dev only)
+```
+
+### Cannot Login - Invalid Credentials
+```
+Ensure you've created an admin account via signup
+Check username and password are correct
+Passwords are case-sensitive
+```
+
+### Cannot See My Events in Admin
+```
+Ensure you're logged in as the admin who created the event
+Each admin only sees their own events (multi-tenant data isolation)
+Check you have permission to view the event
+```
+
+### 404 Error When Accessing Admin Event
+```
+The event doesn't exist OR
+You don't own the event (multi-tenant security check)
+Verify you're logged in as the correct admin account
 ```
 
 ### M-Pesa STK Push Not Sending
@@ -237,17 +309,40 @@ Ensure M-Pesa environment is correct (sandbox vs production)
 Configure firewall to allow incoming webhooks
 Ensure callback URL is publicly accessible
 Check M-Pesa callback settings
+Verify SECRET_KEY matches in .env
+```
+
+### Session Expires
+```
+This is normal - login again with your credentials
+Consider adding password reset feature in future
+```
+
+### Dark Mode Not Persisting
+```
+Ensure browser allows localStorage
+Check browser's privacy settings
+Clear browser cache and try again
 ```
 
 ## Future Enhancements
 
-- Email notifications
-- SMS updates
-- Multiple payment methods (Bank transfer, card)
-- Analytics and reporting
-- Mobile app
+- Password reset via email
+- Admin profile management
+- Event approval workflow
+- Email notifications for contributions
+- SMS updates for contributors
+- Multiple payment methods (Bank transfer, card, Airtel Money)
+- Advanced analytics and reporting
+- Export to PDF/Excel
+- Receipt image uploads
+- Budget alerts
 - Team fundraising features
 - Social sharing
+- Mobile app
+- Admin activity logs
+- Event visibility settings (public/private)
+- Campaign templates
 
 ## License
 
@@ -257,8 +352,18 @@ MIT License - Free to use and modify
 
 For issues and questions:
 1. Check troubleshooting section
-2. Review FastAPI/Flask documentation
+2. Review Flask and Flask-SQLAlchemy documentation
 3. Check M-Pesa API troubleshooting guide
+4. Review authentication and multi-tenant setup
+
+## Project Status
+
+✅ Core Features: Complete
+✅ Authentication & Authorization: Complete
+✅ Multi-Tenant Support: Implemented
+✅ Expenditure Tracking: Complete
+✅ Dark Mode: Implemented
+⏳ Advanced Features: In Progress
 
 ## Contributors
 
