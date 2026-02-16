@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Event - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-card h2 {
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-row.full {
+    grid-template-columns: 1fr;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.button-group .btn {
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h2>Edit Event: {{ event.title }}</h2>
+
+    <form method="POST" class="form">
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Event Title</label>
+                <input type="text" name="title" value="{{ event.title }}" required>
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="4" required>{{ event.description }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Target Amount (KES)</label>
+                <input type="number" name="target_amount" value="{{ event.target_amount }}" min="1000" step="1000" required>
+            </div>
+
+            <div class="form-group">
+                <label>Current Amount</label>
+                <input type="number" value="{{ event.current_amount }}" disabled>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status">
+                    <option value="active" {% if event.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="closed" {% if event.status == 'closed' %}selected{% endif %}>Closed</option>
+                    <option value="completed" {% if event.status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Contributions</label>
+                <input type="number" value="{{ event.contributions|length }}" disabled>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="submit" class="btn btn-success">Save Changes</button>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <hr style="margin: 2rem 0;">
+
+    <h3>Recent Contributions</h3>
+    {% if event.contributions %}
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Contributor</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contrib in event.contributions|reverse %}
+                <tr>
+                    <td>{{ contrib.contributor_name }}</td>
+                    <td>KES {{ "{:,.0f}".format(contrib.amount) }}</td>
+                    <td><span class="badge {{ contrib.status }}">{{ contrib.status }}</span></td>
+                    <td>{{ contrib.created_at.strftime('%d %b %Y') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No contributions yet</p>
+    {% endif %}
+</div>
+{% endblock %}

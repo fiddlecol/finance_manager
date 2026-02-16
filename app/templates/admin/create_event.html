@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event - Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-card h2 {
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-row.full {
+    grid-template-columns: 1fr;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-card">
+    <h2>Create New Fundraising Event</h2>
+
+    {% if error %}
+        <div class="message error" style="display: block;">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" class="form">
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Event Title</label>
+                <input type="text" name="title" placeholder="e.g., Community School Building Fund" required>
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" placeholder="Provide details about the event..." rows="4" required></textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Event Type</label>
+                <select name="event_type" required>
+                    {% for etype in event_types %}
+                        <option value="{{ etype }}">{{ etype.upper() }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Target Amount (KES)</label>
+                <input type="number" name="target_amount" placeholder="500000" min="1000" step="1000" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Organizer Name</label>
+                <input type="text" name="organizer_name" placeholder="Full name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Organizer Phone</label>
+                <input type="tel" name="organizer_phone" placeholder="254712345678" required>
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <div class="form-group">
+                <label>Event Date (Optional)</label>
+                <input type="datetime-local" name="event_date">
+            </div>
+        </div>
+
+        <div class="form-row full">
+            <button type="submit" class="btn btn-success btn-large">Create Event</button>
+        </div>
+    </form>
+
+    <p style="text-align: center; margin-top: 1rem;">
+        <a href="{{ url_for('admin.admin_dashboard') }}">← Back to Dashboard</a>
+    </p>
+</div>
+{% endblock %}

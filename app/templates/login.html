@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - Contribution Platform{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h2>Admin Login</h2>
+            <p>Secure Access to Admin Dashboard</p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('main.login') }}" class="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    required 
+                    class="form-control"
+                    placeholder="Enter your username"
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required 
+                    class="form-control"
+                    placeholder="Enter your password"
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">Login</button>
+        </form>
+
+        <div class="login-footer">
+            <p>Don't have an account? <a href="{{ url_for('main.signup') }}">Create one here</a></p>
+            <p><a href="{{ url_for('main.index') }}">← Back to Homepage</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 2rem;
+    background: var(--light-accent);
+}
+
+.login-card {
+    background: var(--light);
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+    border: 2px solid var(--accent);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header h2 {
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    color: var(--secondary);
+    font-size: 0.95rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-control {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 100%;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+}
+
+.btn-login {
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 0.5rem;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(45, 80, 22, 0.3);
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.login-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.login-footer a:hover {
+    color: var(--primary-light);
+    text-decoration: underline;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.alert-danger {
+    background: #fee;
+    color: #c41e3a;
+    border-left-color: #c41e3a;
+}
+
+/* Dark mode */
+body.dark-mode .login-container {
+    background: #000000;
+}
+
+body.dark-mode .login-card {
+    background: #1a1a1a;
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .login-header h2 {
+    color: var(--success);
+}
+
+body.dark-mode .login-header p {
+    color: var(--accent);
+}
+
+body.dark-mode .form-control {
+    background: #262626;
+    color: var(--text);
+    border-color: #404040;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #999;
+}
+
+body.dark-mode .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(74, 157, 95, 0.1);
+}
+
+body.dark-mode .login-footer {
+    border-top-color: #404040;
+}
+
+body.dark-mode .alert-danger {
+    background: #4a2a2a;
+    color: #ff6b6b;
+    border-left-color: #ff6b6b;
+}
+</style>
+{% endblock %}

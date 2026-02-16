@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Signup - Contribution Platform{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Create Admin Account</h2>
+            <p>Sign up to manage fundraising events</p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('main.signup') }}" class="auth-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    required 
+                    class="form-control"
+                    placeholder="Choose a username (min 3 characters)"
+                    minlength="3"
+                    autofocus
+                >
+                <small>Username must be unique and at least 3 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    class="form-control"
+                    placeholder="your@email.com"
+                >
+                <small>We'll use this to recover your account if needed</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required 
+                    class="form-control"
+                    placeholder="Password (min 6 characters)"
+                    minlength="6"
+                >
+                <small>Password must be at least 6 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password_confirm">Confirm Password</label>
+                <input 
+                    type="password" 
+                    id="password_confirm" 
+                    name="password_confirm" 
+                    required 
+                    class="form-control"
+                    placeholder="Confirm your password"
+                    minlength="6"
+                >
+            </div>
+
+            <button type="submit" class="btn btn-success btn-signup">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('main.login') }}">Login here</a></p>
+            <p><a href="{{ url_for('main.index') }}">← Back to Homepage</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 2rem;
+    background: var(--light-accent);
+}
+
+.auth-card {
+    background: var(--light);
+    padding: 3rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 450px;
+    border: 2px solid var(--accent);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h2 {
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: var(--secondary);
+    font-size: 0.95rem;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+
+.form-group small {
+    font-size: 0.85rem;
+    color: var(--secondary);
+    margin-top: 0.25rem;
+}
+
+.form-control {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 100%;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+}
+
+.btn-signup {
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 0.5rem;
+}
+
+.btn-signup:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 124, 44, 0.3);
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.auth-footer p {
+    margin: 0.5rem 0;
+    font-size: 0.95rem;
+}
+
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+.auth-footer a:hover {
+    color: var(--primary-light);
+    text-decoration: underline;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+}
+
+.alert-danger {
+    background: #fee;
+    color: #c41e3a;
+    border-left-color: #c41e3a;
+}
+
+/* Dark mode */
+body.dark-mode .auth-container {
+    background: #000000;
+}
+
+body.dark-mode .auth-card {
+    background: #1a1a1a;
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .auth-header h2 {
+    color: var(--success);
+}
+
+body.dark-mode .auth-header p {
+    color: var(--accent);
+}
+
+body.dark-mode .form-group label {
+    color: var(--success);
+}
+
+body.dark-mode .form-group small {
+    color: var(--accent);
+}
+
+body.dark-mode .form-control {
+    background: #262626;
+    color: var(--text);
+    border-color: #404040;
+}
+
+body.dark-mode .form-control::placeholder {
+    color: #999;
+}
+
+body.dark-mode .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(74, 157, 95, 0.1);
+}
+
+body.dark-mode .auth-footer {
+    border-top-color: #404040;
+}
+
+body.dark-mode .auth-footer p {
+    color: var(--text);
+}
+
+body.dark-mode .alert-danger {
+    background: #4a2a2a;
+    color: #ff6b6b;
+    border-left-color: #ff6b6b;
+}
+</style>
+{% endblock %}

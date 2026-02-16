@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ event.title }} - Contribution Platform{% endblock %}
+
+{% block content %}
+<div class="event-detail">
+    <div class="event-header-section">
+        <h2>{{ event.title }}</h2>
+        <span class="event-type {{ event.event_type.value }}">{{ event.event_type.value.upper() }}</span>
+    </div>
+
+    <div class="event-content">
+        <div class="event-main">
+            <h3>About This Event</h3>
+            <p>{{ event.description }}</p>
+            
+            <div class="event-info">
+                <div class="info-item">
+                    <strong>Organizer:</strong> {{ event.organizer_name }}
+                </div>
+                <div class="info-item">
+                    <strong>Contact:</strong> {{ event.organizer_phone }}
+                </div>
+                {% if event.event_date %}
+                <div class="info-item">
+                    <strong>Event Date:</strong> {{ event.event_date.strftime('%B %d, %Y') }}
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <strong>Status:</strong> {{ event.status.upper() }}
+                </div>
+            </div>
+
+            <h3>Recent Contributions</h3>
+            {% if contributors %}
+                <div class="contributors-list">
+                    {% for contributor in contributors[:10] %}
+                    <div class="contributor-item">
+                        <div class="contributor-info">
+                            <strong>{{ contributor.contributor_name }}</strong>
+                            <small>{{ contributor.created_at.strftime('%d %b %Y') }}</small>
+                        </div>
+                        <div class="contributor-amount">
+                            <strong>KES {{ "{:,.0f}".format(contributor.amount) }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No contributions yet. Be the first to contribute!</p>
+            {% endif %}
+
+            <h3 style="margin-top: 2rem;">How Funds Are Used</h3>
+            <div id="expenditure-summary" class="expenditure-summary"></div>
+        </div>
+
+        <div class="event-sidebar">
+            <div class="contribution-widget">
+                <div class="progress-section">
+                    <h3>Progress</h3>
+                    <div class="progress-bar large">
+                        <div class="progress-fill" style="width: {{ (event.current_amount / event.target_amount * 100) if event.target_amount > 0 else 0 }}%"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <div class="stat">
+                            <strong id="currentAmount">KES {{ "{:,.0f}".format(event.current_amount) }}</strong>
+                            <small>Raised</small>
+                        </div>
+                        <div class="stat">
+                            <strong>KES {{ "{:,.0f}".format(event.target_amount) }}</strong>
+                            <small>Target</small>
+                        </div>
+                        <div class="stat">
+                            <strong>{{ event.contribution_count }}</strong>
+                            <small>Contributors</small>
+                        </div>
+                    </div>
+                </div>
+
+                {% if event.status == 'active' %}
+                <button class="btn btn-success btn-large" onclick="document.getElementById('contributeModal').style.display='block'">
+                    Contribute Now
+                </button>
+                {% else %}
+                    <button class="btn btn-secondary btn-large" disabled>
+                        Event Closed
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contribution Modal -->
+<div id="contributeModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="document.getElementById('contributeModal').style.display='none'">&times;</span>
+        <h3>Make a Contribution</h3>
+        
+        <form id="contributionForm" class="form">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" placeholder="Your name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="tel" name="phone" placeholder="254712345678" pattern="254[0-9]{9}" required>
+                <small>Format: 254XXXXXXXXX</small>
+            </div>
+
+            <div class="form-group">
+                <label>Amount (KES)</label>
+                <input type="number" name="amount" placeholder="100" min="10" step="10" required>
+                <small>Minimum: KES 10</small>
+            </div>
+
+            <input type="hidden" name="event_id" value="{{ event.id }}">
+
+            <button type="submit" class="btn btn-success btn-large">Send STK Push</button>
+        </form>
+
+        <div id="formMessage" class="message hidden"></div>
+    </div>
+</div>
+
+<script>
+document.getElementById('contributionForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.querySelector('[name="name"]').value;
+    const phone = document.querySelector('[name="phone"]').value;
+    const amount = document.querySelector('[name="amount"]').value;
+    const eventId = {{ event.id }};
+
+    try {
+        const response = await fetch('/api/contribution', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, phone, amount, event_id: eventId })
+        });
+
+        const data = await response.json();
+        const messageDiv = document.getElementById('formMessage');
+        
+        if (response.ok) {
+            messageDiv.textContent = '✓ STK Push sent! Check your phone to enter PIN.';
+            messageDiv.className = 'message success';
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        } else {
+            messageDiv.textContent = '✗ Error: ' + (data.error || 'Unknown error');
+            messageDiv.className = 'message error';
+        }
+    } catch (error) {
+        document.getElementById('formMessage').textContent = '✗ Error: ' + error.message;
+        document.getElementById('formMessage').className = 'message error';
+    }
+});
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('contributeModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Load expenditure summary
+loadExpenditureSummary({{ event.id }});
+
+</script>
+{% endblock %}

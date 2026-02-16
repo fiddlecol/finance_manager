@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Contribution Platform{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h2>Support Community Causes</h2>
+    <p>Help families and communities through fundraising for burials, weddings, medical emergencies, and more</p>
+</div>
+
+<div class="search-bar">
+    <input type="search" id="eventSearch" placeholder="Search events...">
+    <select id="typeFilter">
+        <option value="">All Types</option>
+        <option value="burial">Burial</option>
+        <option value="wedding">Wedding</option>
+        <option value="community">Community</option>
+        <option value="medical">Medical</option>
+        <option value="education">Education</option>
+    </select>
+</div>
+
+<div class="events-grid">
+    {% if events %}
+        {% for event in events %}
+        <div class="event-card" data-type="{{ event.event_type.value }}">
+            <div class="event-header">
+                <h3>{{ event.title }}</h3>
+                <span class="event-type {{ event.event_type.value }}">{{ event.event_type.value.upper() }}</span>
+            </div>
+            <p class="event-description">{{ event.description[:100] }}...</p>
+            
+            <div class="event-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (event.current_amount / event.target_amount * 100) if event.target_amount > 0 else 0 }}%"></div>
+                </div>
+                <div class="progress-text">
+                    <span class="amount">KES {{ "{:,.0f}".format(event.current_amount) }} / {{ "{:,.0f}".format(event.target_amount) }}</span>
+                </div>
+            </div>
+            
+            <div class="event-footer">
+                <small>{{ event.contribution_count }} contributions</small>
+                <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="btn btn-primary">View Details</a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <p>No active events at the moment. Check back soon!</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.getElementById('eventSearch').addEventListener('input', filterEvents);
+document.getElementById('typeFilter').addEventListener('change', filterEvents);
+
+function filterEvents() {
+    const searchTerm = document.getElementById('eventSearch').value.toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value;
+    const cards = document.querySelectorAll('.event-card');
+    
+    cards.forEach(card => {
+        const title = card.querySelector('h3').textContent.toLowerCase();
+        const type = card.getAttribute('data-type');
+        
+        const matchesSearch = title.includes(searchTerm);
+        const matchesType = !typeFilter || type === typeFilter;
+        
+        card.style.display = (matchesSearch && matchesType) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

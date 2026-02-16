@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Contribution Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.stat-card h3 {
+    color: var(--secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.stat-card .value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.admin-table thead {
+    background: var(--light);
+    border-bottom: 2px solid var(--border);
+}
+
+.admin-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--dark);
+}
+
+.admin-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.admin-table tbody tr:hover {
+    background: var(--light);
+}
+
+.admin-table .actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-table .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge.closed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.admin-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    <div class="admin-header">
+        <h2>Admin Dashboard</h2>
+        <a href="{{ url_for('admin.create_event') }}" class="btn btn-success">+ New Event</a>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Events</h3>
+            <div class="value">{{ total_events }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Raised</h3>
+            <div class="value">KES {{ "{:,.0f}".format(total_contributions) }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Active Events</h3>
+            <div class="value">{{ events|selectattr('status', 'equalto', 'active')|list|length }}</div>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Fundraising Events</h3>
+    
+    {% if events %}
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Event Title</th>
+                    <th>Type</th>
+                    <th>Target</th>
+                    <th>Raised</th>
+                    <th>Progress</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td><strong>{{ event.title }}</strong></td>
+                    <td>{{ event.event_type.value }}</td>
+                    <td>KES {{ "{:,.0f}".format(event.target_amount) }}</td>
+                    <td>KES {{ "{:,.0f}".format(event.current_amount) }}</td>
+                    <td>
+                        <div class="progress-bar" style="width: 100px; height: 6px; margin: 0;">
+                            <div class="progress-fill" style="width: {{ (event.current_amount / event.target_amount * 100) if event.target_amount > 0 else 0 }}%"></div>
+                        </div>
+                    </td>
+                    <td><span class="badge {{ event.status }}">{{ event.status }}</span></td>
+                    <td class="actions">
+                        <a href="{{ url_for('admin.event_admin_detail', event_id=event.id) }}" class="btn btn-primary btn-small">View</a>
+                        <a href="{{ url_for('admin.edit_event', event_id=event.id) }}" class="btn btn-secondary btn-small">Edit</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No events yet. <a href="{{ url_for('admin.create_event') }}">Create one</a></p>
+    {% endif %}
+</div>
+{% endblock %}
