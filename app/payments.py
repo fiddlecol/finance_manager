@@ -27,12 +27,23 @@ class STKPushHandler:
     def get_access_token(self):
         """Get M-Pesa access token"""
         try:
+            # Ensure credentials are present
+            if not self.consumer_key or not self.consumer_secret:
+                print("MPESA consumer key/secret not set. Please set MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in your environment or .env file.")
+                return None
             response = requests.get(
                 self.auth_url,
                 auth=HTTPBasicAuth(self.consumer_key, self.consumer_secret),
                 timeout=10
             )
-            response.raise_for_status()
+            # If Safaricom returns a 4xx/5xx, raise so we can inspect
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError:
+                # Helpful debug output for common sandbox issues
+                print(f"Failed to get access token. Status: {response.status_code}. Response: {response.text}")
+                raise
+
             return response.json().get('access_token')
         except requests.exceptions.RequestException as e:
             print(f"Error getting access token: {e}")
@@ -58,6 +69,28 @@ class STKPushHandler:
         
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         
+        # Validate required fields
+        if not self.passkey:
+            print("MPESA passkey not set. Please set MPESA_PASSKEY in your environment or .env file.")
+            return {'error': 'MPESA passkey missing'}
+
+        # Normalize phone number to 2547XXXXXXXX format
+        orig_phone = str(phone_number).strip()
+        if orig_phone.startswith('+'):
+            orig_phone = orig_phone[1:]
+        if orig_phone.startswith('0') and len(orig_phone) >= 10:
+            norm_phone = '254' + orig_phone[1:]
+        elif orig_phone.startswith('7') and len(orig_phone) in (9,10):
+            # sometimes users pass '7XXXXXXXX' or '7XXXXXXXXX'
+            norm_phone = '254' + orig_phone[-9:]
+        elif orig_phone.startswith('254'):
+            norm_phone = orig_phone
+        else:
+            print(f"Invalid phone number format: {phone_number}")
+            return {'error': 'Invalid phone number format'}
+
+        phone_number = norm_phone
+
         # Generate password
         data_to_encode = f"{self.business_shortcode}{self.passkey}{timestamp}"
         import base64
@@ -83,15 +116,26 @@ class STKPushHandler:
         }
         
         try:
+            # Debug: show payload (without Password) and headers summary
+            payload_safe = {k: v for k, v in payload.items() if k != 'Password'}
+            print("Initiating STK Push. Payload (safe):", payload_safe)
+            print("Headers: Authorization present?", 'Authorization' in headers)
             response = requests.post(
                 self.stk_url,
                 json=payload,
                 headers=headers,
                 timeout=10
             )
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError:
+                # Print response body for debugging 4xx/5xx from Safaricom
+                print(f"STK Push failed. Status: {response.status_code}. Response: {response.text}")
+                return {'error': 'STK Push failed', 'status': response.status_code, 'response': response.text}
+
             return response.json()
         except requests.exceptions.RequestException as e:
+            # If there's a network/timeout error, include message
             print(f"Error initiating STK Push: {e}")
             return {'error': str(e)}
     

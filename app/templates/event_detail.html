@@ -169,8 +169,15 @@ window.onclick = function(event) {
     }
 }
 
-// Load expenditure summary
-loadExpenditureSummary({{ event.id }});
+// Load expenditure summary after scripts have initialized
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof loadExpenditureSummary === 'function') {
+        loadExpenditureSummary({{ event.id }});
+    }
+    if (typeof refreshEventProgress === 'function') {
+        refreshEventProgress({{ event.id }});
+    }
+});
 
 </script>
 {% endblock %}

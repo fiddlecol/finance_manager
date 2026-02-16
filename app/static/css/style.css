@@ -74,6 +74,12 @@ body {
     font-weight: 700;
 }
 
+/* Explicitly style the top-level heading to avoid browser defaults */
+.navbar-brand h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
 .navbar-menu {
     display: flex;
     align-items: center;
