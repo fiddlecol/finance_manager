@@ -165,8 +165,8 @@ def process_contribution():
         if not all([event_id, amount, phone]):
             return jsonify({'error': 'Missing required fields'}), 400
         
-        if amount < 10:
-            return jsonify({'error': 'Minimum contribution is KES 10'}), 400
+        if amount < 1:
+            return jsonify({'error': 'Minimum contribution is KES 1'}), 400
         
         # Verify event exists
         event = Event.query.get(event_id)
@@ -185,11 +185,11 @@ def process_contribution():
         db.session.add(contribution)
         db.session.commit()
         
-        # Initiate STK Push
+        # Initiate STK Push - FIXED
         response = stk_handler.initiate_stk_push(
             phone_number=phone,
             amount=int(amount),
-            account_reference=f"CONTRIB-{contribution.id}",
+            contribution_id=contribution.id,  # <-- use contribution_id
             description=f"Contribution to {event.title}"
         )
         
@@ -209,6 +209,7 @@ def process_contribution():
         return jsonify({'error': f'Invalid input: {str(e)}'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @api_bp.route('/payment/callback', methods=['POST'])
 def payment_callback():
