@@ -213,75 +213,86 @@ def process_contribution():
 
 @api_bp.route('/payment/callback', methods=['POST'])
 def payment_callback():
-    """M-Pesa payment callback"""
+    """M-Pesa STK Push payment callback - robust version"""
     try:
         callback_data = request.get_json()
-        
-        # Store raw callback
+        if not callback_data:
+            return jsonify({'error': 'No callback data received'}), 400
+
+        # Parse stkCallback
+        stk_result = callback_data.get('Body', {}).get('stkCallback', {})
+        result_code = stk_result.get('ResultCode', -1)
+        checkout_id = stk_result.get('CheckoutRequestID')
+        account_ref = stk_result.get('MerchantRequestID', '') or stk_result.get('AccountReference', '')
+
+        # Save raw callback
         payment_callback = PaymentCallback(
-            raw_response=callback_data
+            raw_response=callback_data,
+            status='failed',
+            mpesa_receipt_number=None,
+            phone_number=None,
+            amount=None,
+            contribution_id=None
         )
-        
-        # Parse callback
-        result = callback_data.get('Body', {}).get('stkCallback', {})
-        result_code = result.get('ResultCode', -1)
-        
+
+        # If payment was successful
         if result_code == 0:
-            # Payment successful
-            metadata = result.get('CallbackMetadata', {}).get('Item', [])
-            
-            # Extract details from metadata
+            # Extract metadata
+            items = stk_result.get('CallbackMetadata', {}).get('Item', [])
             payment_data = {}
-            for item in metadata:
+            for item in items:
                 name = item.get('Name')
                 value = item.get('Value')
                 if name == 'Amount':
                     payment_data['amount'] = value
                 elif name == 'MpesaReceiptNumber':
                     payment_data['receipt'] = value
-                elif name == 'TransactionDate':
-                    payment_data['date'] = value
                 elif name == 'PhoneNumber':
                     payment_data['phone'] = value
-            
-            # Update payment callback record
+                elif name == 'TransactionDate':
+                    payment_data['date'] = value
+
+            # Try to find the contribution
+            contribution = None
+            if checkout_id:
+                contribution = Contribution.query.filter_by(transaction_id=checkout_id).first()
+            if not contribution and account_ref.startswith("CONTRIB-"):
+                try:
+                    contrib_id = int(account_ref.replace("CONTRIB-", ""))
+                    contribution = Contribution.query.get(contrib_id)
+                except ValueError:
+                    pass
+
+            if contribution:
+                contribution.status = 'completed'
+                contribution.transaction_id = payment_data.get('receipt')
+
+                # Update event totals
+                if contribution.event:
+                    if contribution.event.current_amount is None:
+                        contribution.event.current_amount = 0
+                    contribution.event.current_amount += contribution.amount
+
+                payment_callback.contribution_id = contribution.id
+
+            # Update callback fields
+            payment_callback.status = 'success'
             payment_callback.mpesa_receipt_number = payment_data.get('receipt')
             payment_callback.phone_number = payment_data.get('phone')
             payment_callback.amount = payment_data.get('amount')
-            payment_callback.status = 'success'
-            
-            # Extract contribution ID from CheckoutRequestID or AccountReference
-            account_ref = result.get('CheckoutRequestID')
-            
-            # Update contribution if found
-            if account_ref:
-                contribution = Contribution.query.filter(
-                    (Contribution.id.cast(db.String) == account_ref.split('-')[-1])
-                ).first()
-                
-                if contribution:
-                    contribution.status = 'completed'
-                    contribution.transaction_id = payment_data.get('receipt')
-                    
-                    # Update event's current amount
-                    contribution.event.current_amount += contribution.amount
-                    
-                    payment_callback.contribution_id = contribution.id
-                    db.session.commit()
-                    
-                    return jsonify({'status': 'success','message': 'Payment processed'}), 200
-        
+
         else:
             # Payment failed
             payment_callback.status = 'failed'
-        
+
+        # Commit everything in one go
         db.session.add(payment_callback)
         db.session.commit()
-        
-        return jsonify({'status': 'ok'}), 200
-    
+
+        return jsonify({'status': 'success', 'message': 'Callback processed'}), 200
+
     except Exception as e:
-        print(f"Callback error: {e}")
+        print(f"Callback processing error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @api_bp.route('/event/<int:event_id>/expenditures', methods=['GET'])
