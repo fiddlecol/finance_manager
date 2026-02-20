@@ -188,7 +188,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for exp in expenditures|reverse %}
+                    {% for exp in event.expenditures|reverse|slice(0, 10) %}
                     <tr>
                         <td>{{ exp.description }}</td>
                         <td><span class="badge category-{{ exp.category.value }}">{{ exp.category.value }}</span></td>

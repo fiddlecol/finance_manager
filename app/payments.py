@@ -1,3 +1,4 @@
+# STK Push Handler for Till Payments
 import requests
 import json
 from datetime import datetime
@@ -14,11 +15,12 @@ class STKPushHandler:
     def __init__(self):
         self.consumer_key = os.getenv('MPESA_CONSUMER_KEY', '')
         self.consumer_secret = os.getenv('MPESA_CONSUMER_SECRET', '')
-        self.business_shortcode = os.getenv('MPESA_SHORTCODE', '')  # Till number
+        self.business_shortcode = os.getenv('MPESA_SHORTCODE', '')
+        self.till_number = os.getenv('TILL_NUMBER', '')
         self.passkey = os.getenv('MPESA_PASSKEY', '')
         self.callback_url = os.getenv(
             'MPESA_CALLBACK_URL',
-            'https://contribution.fiddawg.co.ke/api/payment/callback'
+            'https://community.fiddawg.co.ke/api/payment/callback'
         )
         self.environment = os.getenv('MPESA_ENV', 'sandbox')
         
@@ -73,16 +75,16 @@ class STKPushHandler:
         password = base64.b64encode(password_str.encode()).decode()
         
         # Shorten AccountReference to 12 chars max for sandbox
-        account_ref = f"CONTRIB{contribution_id}"[:12]
+        account_ref = f"TILL{contribution_id}"[:12]
         
         payload = {
             "BusinessShortCode": self.business_shortcode,
             "Password": password,
             "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",  # Sandbox compatible
+            "TransactionType": "CustomerBuyGoodsOnline",  # <-- Till payment
             "Amount": int(amount),
             "PartyA": phone_number,
-            "PartyB": self.business_shortcode,
+            "PartyB": self.till_number,
             "PhoneNumber": phone_number,
             "CallBackURL": self.callback_url,
             "AccountReference": account_ref,
@@ -96,7 +98,7 @@ class STKPushHandler:
         
         try:
             payload_safe = {k: v for k, v in payload.items() if k != 'Password'}
-            print("Initiating STK Push. Payload (safe):", json.dumps(payload_safe, indent=2))
+            print("Initiating STK Push (Till). Payload (safe):", json.dumps(payload_safe, indent=2))
             
             response = requests.post(self.stk_url, json=payload, headers=headers, timeout=10)
             response.raise_for_status()
@@ -111,7 +113,7 @@ class STKPushHandler:
             
             return resp_json
         except requests.exceptions.RequestException as e:
-            print(f"Error initiating STK Push: {e}")
+            print(f"Error initiating STK Push (Till): {e}")
             return {'error': str(e)}
     
     def validate_callback(self, callback_data):
